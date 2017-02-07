@@ -18,7 +18,10 @@ def control(speed=0, acceleration=0, car_in_front=200, gap=5, cruise_speed=None,
                          t_safe=.5, prev_setpoint=0., integral_setpoint=0.,
                          maintaining_distance=False)
 
-        delta_distance = car_in_front - 2 * gap - speed**2 / (2 * 2.11)
+        # using 2as = v^2 - u^2 with u = 0
+        distance_to_zero = speed**2 / (2 * 2.11)
+        # this is the distance to maintain at all times for safe stopping
+        delta_distance = car_in_front - (2 * gap + distance_to_zero)
 
         # if the car ahead does not allow to get to cruise speed
         # use safe following distance as a measure until cruise speed is reached again
@@ -55,3 +58,5 @@ def control(speed=0, acceleration=0, car_in_front=200, gap=5, cruise_speed=None,
         state['integral_setpoint'] = state['integral_setpoint'] + set_point
 
         return brake, gas, state
+
+def autotune()
