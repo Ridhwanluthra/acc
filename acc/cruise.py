@@ -16,12 +16,13 @@ def control(speed=0, acceleration=0, car_in_front=200, gap=5, cruise_speed=None,
         if state is None:
             state = dict(K_p=0.15, K_d=1., K_i=0.0003, d_front_prev=100,
                          t_safe=.5, prev_setpoint=0., integral_setpoint=0.,
-                         maintaining_distance=False)
+                         maintaining_distance=False, delta_distance=0.)
 
         # using 2as = v^2 - u^2 with u = 0
         distance_to_zero = speed**2 / (2 * 2.11)
         # this is the distance to maintain at all times for safe stopping
         delta_distance = car_in_front - (2 * gap + distance_to_zero)
+        print(delta_distance)
 
         # if the car ahead does not allow to get to cruise speed
         # use safe following distance as a measure until cruise speed is reached again
@@ -56,7 +57,8 @@ def control(speed=0, acceleration=0, car_in_front=200, gap=5, cruise_speed=None,
         # ------set variables from previous value-----
         state['prev_setpoint'] = set_point
         state['integral_setpoint'] = state['integral_setpoint'] + set_point
+        state['delta_distance'] = delta_distance
 
         return brake, gas, state
 
-def autotune()
+# def autotune()
