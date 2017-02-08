@@ -57,7 +57,7 @@ class Visualizer(object):
         ax1ss.set_ylim(-max_speed * CV.MS_TO_MPH, max_speed * CV.MS_TO_MPH)
         ax2.set_ylim(0, 300)
         ax3.set_ylim(0, max_score)
-        ax4.set_ylim(0, 1)
+        ax4.set_ylim(0, max_accel)
         ax4s.set_ylim(0, max_accel)
 
         fig.subplots_adjust(wspace=0.5)
