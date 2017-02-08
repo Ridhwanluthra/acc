@@ -34,7 +34,8 @@ class Maneuver(object):
         self.duration = duration
         self.title = title
 
-    def evaluate(self, control=None, verbosity=0, gap=10, plot=False, animate=False):
+    def evaluate(self, control=None, verbosity=0, gap=10, plot=False, animate=False, state=None):
+        # print('eval', state)
         """runs the plant sim and returns (score, run_data)"""
         plant = Plant(
             lead_relevancy=self.lead_relevancy,
@@ -51,7 +52,7 @@ class Maneuver(object):
         steer_torque = 0
 
         # dictionary used by the cruise control function to maintan state between invocations.
-        state = None
+        # state = None
 
         # 3 possible states(accelerating(1), not accelerating(0), braking(-1))
         previous_state = 0
@@ -60,7 +61,7 @@ class Maneuver(object):
         # TODO: calibrate this threshold to denote maximum discomfort allowed
         score_threshold = 200.
         # TODO: calibrate this constant for scaling rate of acceleration
-        accel_const = 1.
+        accel_const = 20.
 
         # Initialize the Visualizer. Set animate = False to only display the plots at the end of the maneuver,
         # this will be faster than showing in real time with animate = True
@@ -96,14 +97,15 @@ class Maneuver(object):
             try:
                 assert car_in_front >= gap
             except AssertionError:
-                score = np.inf
-                raise
-
+                score += (gap - car_in_front) * 10
+                # raise
+            # print(state['K_p'])
             brake, gas, state = control(speed=speed,
                                         acceleration=acceleration,
                                         car_in_front=car_in_front,
                                         gap=gap,
-                                        cruise_speed=cruise_speed)
+                                        cruise_speed=cruise_speed,
+                                        state=state)
 
             if gas > 0:
                 # accelerating
@@ -116,8 +118,7 @@ class Maneuver(object):
                 new_state = 0
 
             # getting the rate of change of acceleration
-            # TODO: add division by exact time, if relevent(did not delve deep into timekeeping)
-            rate_accel = acceleration - prev_accel
+            rate_accel = (acceleration - prev_accel) /plant.ts
             prev_accel = acceleration
 
             # based on acceptable jerk values given in
@@ -133,36 +134,33 @@ class Maneuver(object):
             previous_state = new_state
 
             # this updates the plots with latest state
-
             if verbosity >= 4:
                 vis.update_data(cur_time=plant.current_time(), speed=speed,
                                 acceleration=acceleration, gas_control=gas, brake_control=brake,
                                 car_in_front=car_in_front, steer_torque=steer_torque, score=score)
 
         score /= self.duration
-        try:
-            assert score <= score_threshold
-        except AssertionError:
-            score = np.inf
-            raise
+        # try:
+        #     assert score <= score_threshold
+        # except AssertionError:
+        #     score = np.inf
+            # raise
         
 
         # Assert the desired speed matches the actual speed at the end of the maneuver.
         # only valid when lead distance is greater than distance to be maintained
         # TODO: Make atol lower once we have a decent solution.
-        try:
-            if state['maintaining_distance']:
-                assert np.isclose(state['delta_distance'], 0., atol=2)
-            else:
-                assert np.isclose(speed, cruise_speed, atol=2)
-        except AssertionError:
-            score = np.inf
-            raise
+
+        if state['maintaining_distance']:
+            score += abs(state['delta_distance']) 
+        else:
+            score += abs(speed - cruise_speed) 
+
 
         # TODO: if there is a car in front, assert the speed matches that car's speed at the end of the manuever.
 
         # this cleans up the plots for this maneuver and pauses until user presses [Enter]
         if verbosity >= 4 and plot:
             vis.show_final_plots()
-
-        return
+        # print(score)
+        return score

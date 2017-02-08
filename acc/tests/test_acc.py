@@ -197,4 +197,20 @@ def test_verbose_run():
     """Runs tests in verbose mode with plotting and all.
     """
     # assertions in evaluate will make tests fail if needed.
-    maneuvers[4].evaluate(control=control, verbosity=5, animate=True, plot=True)
+    maneuvers[3].evaluate(control=control, verbosity=5, animate=True, plot=True)
+
+def autotune(params, *data):
+    # print([i for i in params])
+    maneuver, x = data
+    state = dict(K_p=params[0], K_d=0, K_i=0, d_front_prev=100,
+                 t_safe=.5, prev_setpoint=0., integral_setpoint=0.,
+                 maintaining_distance=False, delta_distance=0.)
+    score = maneuver.evaluate(control=control, state=state)
+    return score
+
+@pytest.mark.parametrize("maneuver", maneuvers, ids=[m.title for m in maneuvers])
+def test_autotune(maneuver):
+    from scipy.optimize import fmin, differential_evolution
+    # res = fmin(autotune, [0,0,0])
+    res = differential_evolution(autotune, [(0,5),(0,10),(0,2)], args=(maneuver,1))
+    print('printing now\n', res)
