@@ -93,11 +93,7 @@ class Maneuver(object):
             acceleration = np.clip(acceleration, -0.9 * 9.81, 0.4 * 9.81)
 
             # Assert the gap parameter is respected during all the maneuver.
-            try:
-                assert car_in_front >= gap
-            except AssertionError:
-                score = np.inf
-                raise
+            assert car_in_front >= gap
 
             brake, gas, state = control(speed=speed,
                                         acceleration=acceleration,
@@ -140,24 +136,13 @@ class Maneuver(object):
                                 car_in_front=car_in_front, steer_torque=steer_torque, score=score)
 
         score /= self.duration
-        try:
-            assert score <= score_threshold
-        except AssertionError:
-            score = np.inf
-            raise
-        
+        assert score <= score_threshold
 
         # Assert the desired speed matches the actual speed at the end of the maneuver.
         # only valid when lead distance is greater than distance to be maintained
-        # TODO: Make atol lower once we have a decent solution.
-        try:
-            if state['maintaining_distance']:
-                assert np.isclose(state['delta_distance'], 0., atol=2)
-            else:
-                assert np.isclose(speed, cruise_speed, atol=2)
-        except AssertionError:
-            score = np.inf
-            raise
+        if car_in_front >= 200:
+            # TODO: Make atol lower once we have a decent solution.
+            assert np.isclose(speed, cruise_speed, atol=2)
 
         # TODO: if there is a car in front, assert the speed matches that car's speed at the end of the manuever.
 
